@@ -48,4 +48,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ text }),
     }),
+
+  getProgress: (sessionId: string) =>
+    request<{ status: string | null }>(`/sessions/${sessionId}/progress`),
 };

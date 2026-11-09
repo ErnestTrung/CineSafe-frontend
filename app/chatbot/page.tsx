@@ -23,6 +23,7 @@ export default function ChatbotPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -54,6 +55,24 @@ export default function ChatbotPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (!isLoading || !sessionId) return;
+    let active = true;
+    const timer = setInterval(() => {
+      api
+        .getProgress(sessionId)
+        .then(({ status }) => {
+          if (active) setProgress(status);
+        })
+        .catch(() => {}); // a failed poll just leaves the last status showing
+    }, 500);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      setProgress(null);
+    };
+  }, [isLoading, sessionId]);
 
   const createFreshSession = async (customUserId?: string): Promise<string> => {
     const currentUser = storage.getUser();
@@ -317,9 +336,9 @@ export default function ChatbotPage() {
             })
           )}
           {isLoading && (
-            <div className="flex items-center gap-2.5 text-xs text-[#2a14b4] italic pl-2">
+            <div role="status" className="flex items-center gap-2.5 text-xs text-[#2a14b4] italic pl-2">
               <div className="w-3.5 h-3.5 border-2 border-[#2a14b4] border-t-transparent rounded-full animate-spin" />
-              Thinking and verifying safety...
+              {progress ?? "Thinking and verifying safety..."}
             </div>
           )}
           <div ref={chatEndRef} />
